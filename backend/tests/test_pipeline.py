@@ -48,7 +48,7 @@ def test_language_reaches_transcription(client, videos, monkeypatch):
 
 def test_notes_failure_returns_no_partial_result_and_cleans_up(client, videos, monkeypatch, temp_dir):
     def fail(transcript, title=None):
-        raise EngineError("gemini_rate_limited", "The notes service has reached its usage limit. Try again later.")
+        raise EngineError("gemini_rate_limited", "The AI service has reached its usage limit. Try again later.")
 
     monkeypatch.setattr(notes_generator, "generate_notes", fail)
     response = process(client, videos)
@@ -58,7 +58,7 @@ def test_notes_failure_returns_no_partial_result_and_cleans_up(client, videos, m
         "success": False,
         "error": {
             "code": "gemini_rate_limited",
-            "message": "The notes service has reached its usage limit. Try again later.",
+            "message": "The AI service has reached its usage limit. Try again later.",
         },
     }
     assert list(temp_dir.iterdir()) == []

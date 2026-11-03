@@ -1,5 +1,5 @@
 // All communication with the FastAPI backend goes through this module.
-import type { Lecture, NewLectureInput, VideoProcessData } from "@/types/lecture"
+import type { Lecture, NewLectureInput, Question, QuestionRequest, VideoProcessData } from "@/types/lecture"
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "")
 
@@ -58,6 +58,16 @@ export async function processVideo(video: File): Promise<VideoProcessData> {
   formData.append("video", video)
   const response = await request<{ data: VideoProcessData }>("/api/video/process", { method: "POST", body: formData })
   return response.data
+}
+
+/** Generate quiz questions from a lecture's transcript. */
+export async function generateQuestions(input: QuestionRequest): Promise<Question[]> {
+  const response = await request<{ data: { questions: Question[] } }>("/api/questions/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+  return response.data.questions
 }
 
 export function getLecture(lectureId: string): Promise<Lecture> {

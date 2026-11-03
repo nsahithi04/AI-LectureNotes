@@ -26,7 +26,7 @@ def fake_transcription(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def fake_notes(monkeypatch):
-    """Tests never call Gemini. The notes service is tested with a fake client in test_notes.py."""
+    """Tests never call Gemini. Notes generation is tested with a fake client in test_notes.py."""
     real_generate_notes = notes_generator.generate_notes
 
     def generate_notes(transcript, title=None):

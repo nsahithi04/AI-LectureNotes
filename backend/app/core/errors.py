@@ -37,6 +37,7 @@ ENGINE_ERROR_STATUS = {
     "audio_extraction_failed": 500,
     "transcription_failed": 500,
     "invalid_notes": 502,
+    "invalid_questions": 502,
     "ffmpeg_missing": 503,
     "whisper_unavailable": 503,
     "gemini_not_configured": 503,

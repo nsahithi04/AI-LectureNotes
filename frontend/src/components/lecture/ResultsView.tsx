@@ -3,19 +3,21 @@ import Badge from "@/components/ui/Badge"
 import Button from "@/components/ui/Button"
 import EmptyState from "@/components/ui/EmptyState"
 import Icon from "@/components/ui/Icon"
-import { NOTE_OPTIONS, TRANSCRIPT_OPTION, getInputOption, getNoteOption } from "@/data/options"
+import QuizBuilder from "@/components/quiz/QuizBuilder"
+import { NOTE_OPTIONS, QUIZ_OPTION, TRANSCRIPT_OPTION, getInputOption, getNoteOption } from "@/data/options"
 import type { Lecture, NoteType } from "@/types/lecture"
 import { blocksToText, countWords, formatDate, formatFileSize, transcriptToText } from "@/utils/format"
 import NoteDocument from "./NoteDocument"
 import TranscriptDocument from "./TranscriptDocument"
 
 export default function ResultsView({ lecture }: { lecture: Lecture }) {
-  const [tab, setTab] = useState<NoteType | "transcript">(lecture.note_types[0] ?? "detailed")
+  const [tab, setTab] = useState<NoteType | "transcript" | "quiz">(lecture.note_types[0] ?? "detailed")
   const [copied, setCopied] = useState(false)
 
   const showTranscript = tab === "transcript"
-  const option = showTranscript ? TRANSCRIPT_OPTION : getNoteOption(tab)
-  const blocks = showTranscript ? null : lecture.notes[tab]
+  const showQuiz = tab === "quiz"
+  const option = showQuiz ? QUIZ_OPTION : showTranscript ? TRANSCRIPT_OPTION : getNoteOption(tab)
+  const blocks = showQuiz || showTranscript ? null : lecture.notes[tab]
   const plainText = showTranscript ? transcriptToText(lecture.transcript ?? []) : blocks ? blocksToText(blocks) : ""
   const words = countWords(plainText)
 
@@ -58,13 +60,23 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
               <Icon name="chevron" size={15} />
             </button>
           )}
-          <button disabled className="nav-soon">
-            <div>
-              <Icon name="question" size={18} />
-              <span>Practice test</span>
-            </div>
-            <small>Soon</small>
-          </button>
+          {lecture.transcript ? (
+            <button className={showQuiz ? "active" : ""} onClick={() => setTab("quiz")}>
+              <div>
+                <Icon name={QUIZ_OPTION.icon} size={18} />
+                <span>{QUIZ_OPTION.title}</span>
+              </div>
+              <Icon name="chevron" size={15} />
+            </button>
+          ) : (
+            <button disabled className="nav-soon">
+              <div>
+                <Icon name={QUIZ_OPTION.icon} size={18} />
+                <span>{QUIZ_OPTION.title}</span>
+              </div>
+              <small>Soon</small>
+            </button>
+          )}
           <div className="source-link">
             <span>SOURCE</span>
             <div className="source-item">
@@ -81,7 +93,13 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
           </div>
         </aside>
         <section className="document-view">
-          {plainText ? (
+          {/* Stays mounted on other tabs, so the teacher's questions aren't lost when they check the notes. */}
+          {lecture.transcript && (
+            <div hidden={!showQuiz}>
+              <QuizBuilder title={lecture.title} segments={lecture.transcript} />
+            </div>
+          )}
+          {showQuiz ? null : plainText ? (
             <>
               <div className="doc-toolbar">
                 <div>
@@ -110,7 +128,7 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
         </section>
         <aside className="document-info">
           <span>DOCUMENT INFO</span>
-          <dl>
+          <dl hidden={showQuiz}>
             <div>
               <dt>Created</dt>
               <dd>{formatDate(lecture.created_at)}</dd>

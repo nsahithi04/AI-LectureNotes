@@ -1,5 +1,5 @@
 import type { IconName } from "@/components/ui/Icon"
-import type { InputType, NoteType } from "@/types/lecture"
+import type { InputType, NoteType, QuestionChoice } from "@/types/lecture"
 
 export interface InputOption {
   type: InputType
@@ -56,6 +56,21 @@ export const TRANSCRIPT_OPTION = {
   description: "Everything said in the lecture, with timestamps.",
   icon: "audio",
 } as const
+
+export const QUIZ_OPTION = {
+  title: "Quiz",
+  description: "Choose the questions to give your students.",
+  icon: "question",
+} as const
+
+export const QUESTION_CHOICES: { type: QuestionChoice; title: string; description: string }[] = [
+  { type: "multiple_choice", title: "Multiple choice", description: "Four options, one correct" },
+  { type: "short_answer", title: "Q&A", description: "Written answers, with an ideal answer" },
+  { type: "both", title: "Both", description: "A mix of the two" },
+]
+
+export const MAX_QUESTIONS = 50
+export const MAX_INSTRUCTIONS_LENGTH = 1000
 
 export const MIN_TEXT_LENGTH = 30
 export const MAX_UPLOAD_SIZE_MB = Number(import.meta.env.VITE_MAX_UPLOAD_SIZE_MB) || 500

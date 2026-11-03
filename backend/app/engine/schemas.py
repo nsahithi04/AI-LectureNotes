@@ -1,5 +1,7 @@
 """What the engine takes in and returns. The API sends these to the client as JSON."""
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -54,3 +56,15 @@ class LectureResult(BaseModel):
     video: VideoInfo
     transcription: Transcript
     lecture_notes: GeneratedNotes
+
+
+class Question(BaseModel):
+    type: Literal["multiple_choice", "short_answer"]
+    topic: str
+    question: str
+    options: list[str]  # empty for short answer questions
+    answer: str         # the correct option, or the ideal short answer
+
+
+class GeneratedQuestions(BaseModel):
+    questions: list[Question]

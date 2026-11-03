@@ -76,3 +76,22 @@ export interface NewLectureInput {
   file: File | null
   text: string
 }
+
+export type QuestionKind = "multiple_choice" | "short_answer"
+
+export type QuestionChoice = QuestionKind | "both"
+
+export interface Question {
+  type: QuestionKind
+  topic: string
+  question: string
+  options: string[]
+  answer: string
+}
+
+export interface QuestionRequest {
+  transcript: string
+  count: number
+  question_type: QuestionChoice
+  instructions: string | null
+}

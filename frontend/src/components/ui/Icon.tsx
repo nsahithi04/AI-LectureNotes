@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-export type IconName = "spark" | "plus" | "grid" | "folder" | "note" | "question" | "chart" | "settings" | "help" | "upload" | "audio" | "video" | "text" | "arrow" | "check" | "clock" | "error" | "download" | "copy" | "edit" | "refresh" | "search" | "more" | "chevron" | "menu" | "close" | "trash" | "book" | "eye" | "bell" | "external" | "pdf"
+export type IconName = "spark" | "plus" | "grid" | "folder" | "note" | "question" | "chart" | "settings" | "help" | "upload" | "audio" | "video" | "text" | "arrow" | "check" | "clock" | "error" | "download" | "copy" | "edit" | "refresh" | "search" | "more" | "chevron" | "menu" | "close" | "trash" | "book" | "eye" | "bell" | "external" | "pdf" | "document"
 
 const paths: Record<IconName, ReactNode> = {
   spark: (
@@ -156,6 +156,12 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <path d="M14 4h6v6M20 4l-9 9" />
       <path d="M18 13v6H5V6h6" />
+    </>
+  ),
+  document: (
+    <>
+      <path d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+      <path d="M14 3v5h5M8 12h8M8 16h8M8 8h3" />
     </>
   ),
   pdf: (

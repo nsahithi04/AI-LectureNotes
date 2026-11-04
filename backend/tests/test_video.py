@@ -20,8 +20,8 @@ def test_valid_video_is_accepted(client, videos, temp_dir, kind):
 
     assert response.status_code == 200
     data = response.json()["data"]
-    assert data["video"]["filename"] == path.name
-    assert data["video"]["duration"] == pytest.approx(2, abs=0.2)
+    assert data["source"]["filename"] == path.name
+    assert data["source"]["duration"] == pytest.approx(2, abs=0.2)
     assert data["transcription"]["text"] == "Hello."
     assert list(temp_dir.iterdir()) == []
 
@@ -105,7 +105,7 @@ def test_filename_cannot_escape_the_temp_folder(client, videos, temp_dir):
     response = upload(client, videos["mp4"].read_bytes(), "../../evil.mp4")
 
     assert response.status_code == 200
-    assert response.json()["data"]["video"]["filename"] == "evil.mp4"
+    assert response.json()["data"]["source"]["filename"] == "evil.mp4"
     assert list(temp_dir.iterdir()) == []
 
 

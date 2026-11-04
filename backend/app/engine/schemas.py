@@ -1,14 +1,23 @@
 """What the engine takes in and returns. The API sends these to the client as JSON."""
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
 
-class VideoInfo(BaseModel):
-    filename: str
-    duration: float  # seconds
-    size: int        # bytes
+SourceType = Literal["video", "audio", "document", "text"]
+
+
+class SourceInfo(BaseModel):
+    """What the notes were made from. Fields that don't apply to a source type are null."""
+
+    type: SourceType
+    format: Optional[str] = None        # file extension without the dot, such as mp4, pdf or pptx
+    filename: Optional[str] = None
+    size: Optional[int] = None          # bytes
+    duration: Optional[float] = None    # seconds, for video and audio
+    pages: Optional[int] = None         # pages of a PDF, or slides of a PowerPoint file
+    characters: int = 0                 # length of the text the notes were made from
 
 
 class AudioInfo(BaseModel):
@@ -53,8 +62,9 @@ class GeneratedNotes(BaseModel):
 
 
 class LectureResult(BaseModel):
-    video: VideoInfo
-    transcription: Transcript
+    source: SourceInfo
+    transcription: Optional[Transcript] = None  # only for video and audio
+    text: str                                   # the text the notes were made from
     lecture_notes: GeneratedNotes
 
 

@@ -4,7 +4,15 @@ from pathlib import Path
 import pytest
 
 from app.core.errors import ENGINE_ERROR_STATUS
-from app.engine import audio_extractor, gemini_client, notes_generator, question_generator, transcriber, video_reader
+from app.engine import (
+    audio_extractor,
+    document_reader,
+    gemini_client,
+    media_reader,
+    notes_generator,
+    question_generator,
+    transcriber,
+)
 from app.engine.errors import EngineError
 
 ENGINE_DIR = Path(audio_extractor.__file__).parent
@@ -27,9 +35,10 @@ def test_engine_stays_independent_of_the_web_app(path):
 
 def test_every_engine_error_has_an_http_status():
     codes = set()
-    for module in (audio_extractor, gemini_client, notes_generator, question_generator, transcriber, video_reader):
+    for module in (audio_extractor, document_reader, gemini_client, media_reader, notes_generator, question_generator, transcriber):
         for node in ast.walk(ast.parse(Path(module.__file__).read_text())):
-            if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "EngineError":
+            # Some codes are passed through a helper as a variable, and appear as text elsewhere in the file.
+            if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "EngineError" and isinstance(node.args[0], ast.Constant):
                 codes.add(node.args[0].value)
 
     assert codes

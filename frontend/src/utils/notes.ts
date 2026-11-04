@@ -1,4 +1,4 @@
-import type { GeneratedNotes, Lecture, NoteBlock, VideoProcessData } from "@/types/lecture"
+import type { GeneratedNotes, Lecture, NoteBlock, ProcessData } from "@/types/lecture"
 
 function bulletSection(heading: string, level: 1 | 2, items: string[]): NoteBlock[] {
   return items.length ? [{ type: "heading", level, text: heading }, { type: "bullets", items }] : []
@@ -37,22 +37,23 @@ function importantBlocks(notes: GeneratedNotes): NoteBlock[] {
 }
 
 /** Turn the backend's response into the Lecture shape the results screen displays. */
-export function toLecture({ video, transcription, lecture_notes: notes }: VideoProcessData): Lecture {
+export function toLecture({ source, transcription, text, lecture_notes: notes }: ProcessData): Lecture {
   const short = shortBlocks(notes)
   const important = importantBlocks(notes)
   return {
     id: "generated",
     title: notes.title,
-    input_type: "video",
+    input_type: source.type,
     status: "completed",
     note_types: ["detailed", "short", "important"],
-    source: { filename: video.filename, file_size: video.size, characters: null },
+    source: { filename: source.filename, file_size: source.size, characters: source.characters },
     notes: {
       detailed: detailedBlocks(notes),
       short: short.length ? short : null,
       important: important.length ? important : null,
     },
-    transcript: transcription.segments,
+    transcript: transcription?.segments,
+    source_text: text,
     error: null,
     created_at: new Date().toISOString(),
   }

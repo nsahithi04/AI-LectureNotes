@@ -14,7 +14,7 @@ def test_full_response_has_video_transcript_and_notes(client, videos, temp_dir):
     body = response.json()
     assert body["success"] is True
     assert body["message"] == "Lecture notes generated successfully"
-    assert body["data"]["video"]["filename"] == "lecture.mp4"
+    assert body["data"]["source"]["filename"] == "lecture.mp4"
     assert body["data"]["transcription"]["segments"][0]["text"] == "Hello."
     assert body["data"]["lecture_notes"]["title"] == "Generated title"
     assert list(temp_dir.iterdir()) == []

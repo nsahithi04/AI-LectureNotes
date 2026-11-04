@@ -36,7 +36,7 @@ def clean_transcript(transcript: str) -> str:
     if not transcript:
         raise EngineError("empty_transcript", "There's no transcript to work from.")
     if len(transcript) > MAX_TRANSCRIPT_CHARACTERS:
-        raise EngineError("transcript_too_long", "This transcript is too long to process.")
+        raise EngineError("transcript_too_long", "This lecture has too much text to process.")
     return transcript
 
 

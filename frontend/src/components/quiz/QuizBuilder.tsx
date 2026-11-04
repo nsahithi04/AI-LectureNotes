@@ -5,7 +5,7 @@ import PageHeader from "@/components/ui/PageHeader"
 import { generateQuestions } from "@/services/api"
 import type { SavedForm } from "@/services/googleForms"
 import { loadSavedForms, saveForm } from "@/services/savedForms"
-import type { Question, TranscriptSegment } from "@/types/lecture"
+import type { Question } from "@/types/lecture"
 import { questionsToText, type QuizQuestion } from "@/utils/quiz"
 import FormDetails from "./FormDetails"
 import GoogleFormPanel from "./GoogleFormPanel"
@@ -17,7 +17,7 @@ import SavedFormsList from "./SavedFormsList"
 const INITIAL_SETUP: QuizSetup = { count: 10, questionType: "multiple_choice", instructions: "" }
 
 /** The teacher's quiz flow: choose the settings, generate questions, then pick, edit and add to them. */
-export default function QuizBuilder({ title, segments }: { title: string; segments: TranscriptSegment[] }) {
+export default function QuizBuilder({ title, text }: { title: string; text: string }) {
   const [setup, setSetup] = useState(INITIAL_SETUP)
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null)
   const [generating, setGenerating] = useState(false)
@@ -46,7 +46,7 @@ export default function QuizBuilder({ title, segments }: { title: string; segmen
     setError(null)
     try {
       const generated = await generateQuestions({
-        transcript: segments.map((segment) => segment.text).join(" "),
+        transcript: text,
         count: setup.count,
         question_type: setup.questionType,
         instructions: setup.instructions.trim() || null,

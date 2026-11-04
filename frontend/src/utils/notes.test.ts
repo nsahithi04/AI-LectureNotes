@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import type { GeneratedNotes, NoteBlock, VideoProcessData } from "@/types/lecture"
-import { formatTimestamp, transcriptToText } from "./format"
+import type { GeneratedNotes, NoteBlock, ProcessData } from "@/types/lecture"
+import { formatTimestamp, textToBlocks, transcriptToText } from "./format"
 import { toLecture } from "./notes"
 
 const notes: GeneratedNotes = {
@@ -21,10 +21,11 @@ const notes: GeneratedNotes = {
   conclusion: "Models must generalize.",
 }
 
-function response(overrides: Partial<GeneratedNotes> = {}): VideoProcessData {
+function response(overrides: Partial<GeneratedNotes> = {}): ProcessData {
   return {
-    video: { filename: "lecture.mp4", duration: 60, size: 1024 },
+    source: { type: "video", format: "mp4", filename: "lecture.mp4", size: 1024, duration: 60, pages: null, characters: 6 },
     transcription: { language: "en", text: "Hello.", segments: [{ start: 0, end: 1, text: "Hello." }] },
+    text: "Hello.",
     lecture_notes: { ...notes, ...overrides },
   }
 }
@@ -42,6 +43,20 @@ describe("toLecture", () => {
     expect(lecture.source.filename).toBe("lecture.mp4")
     expect(lecture.source.file_size).toBe(1024)
     expect(lecture.transcript).toHaveLength(1)
+  })
+
+  it("keeps the text of a document or pasted text, without a transcript", () => {
+    const lecture = toLecture({
+      ...response(),
+      source: { type: "document", format: "pptx", filename: "slides.pptx", size: 2048, duration: null, pages: 3, characters: 11 },
+      transcription: null,
+      text: "Slide text.",
+    })
+
+    expect(lecture.input_type).toBe("document")
+    expect(lecture.transcript).toBeUndefined()
+    expect(lecture.source_text).toBe("Slide text.")
+    expect(lecture.source.characters).toBe(11)
   })
 
   it("puts every part of the notes in the detailed tab, except concepts and takeaways", () => {
@@ -87,6 +102,13 @@ describe("toLecture", () => {
     expect(lecture.notes.short).toBeNull()
     expect(lecture.notes.important).toBeNull()
   })
+})
+
+it("textToBlocks splits text into paragraphs at blank lines", () => {
+  expect(textToBlocks("First slide.\n\n  \nSecond slide\nsame paragraph.")).toEqual([
+    { type: "paragraph", text: "First slide." },
+    { type: "paragraph", text: "Second slide\nsame paragraph." },
+  ])
 })
 
 describe("transcript formatting", () => {

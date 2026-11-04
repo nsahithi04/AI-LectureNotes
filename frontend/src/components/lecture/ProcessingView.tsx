@@ -10,7 +10,7 @@ function processingSteps(inputType: InputType): string[] {
   const extract: Record<InputType, string[]> = {
     video: ["Extract audio from video", "Transcribe speech to text"],
     audio: ["Transcribe speech to text"],
-    pdf: ["Extract text from PDF"],
+    document: ["Extract text from document"],
     text: [],
   }
   return ["Upload received", ...extract[inputType], "Generate notes"]

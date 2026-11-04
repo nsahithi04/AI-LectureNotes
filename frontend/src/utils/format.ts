@@ -36,6 +36,15 @@ export function transcriptToText(segments: TranscriptSegment[]): string {
   return segments.map((segment) => `[${formatTimestamp(segment.start)}] ${segment.text}`).join("\n")
 }
 
+/** Pasted or document text as paragraphs, split at blank lines. */
+export function textToBlocks(text: string): NoteBlock[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => ({ type: "paragraph", text: paragraph }))
+}
+
 export function countWords(text: string): number {
   return text.split(/\s+/).filter(Boolean).length
 }

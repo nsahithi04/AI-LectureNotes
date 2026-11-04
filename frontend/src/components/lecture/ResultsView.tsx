@@ -4,9 +4,9 @@ import Button from "@/components/ui/Button"
 import EmptyState from "@/components/ui/EmptyState"
 import Icon from "@/components/ui/Icon"
 import QuizBuilder from "@/components/quiz/QuizBuilder"
-import { NOTE_OPTIONS, QUIZ_OPTION, TRANSCRIPT_OPTION, getInputOption, getNoteOption } from "@/data/options"
+import { NOTE_OPTIONS, QUIZ_OPTION, SOURCE_TEXT_OPTION, TRANSCRIPT_OPTION, getInputOption, getNoteOption } from "@/data/options"
 import type { Lecture, NoteType } from "@/types/lecture"
-import { blocksToText, countWords, formatDate, formatFileSize, transcriptToText } from "@/utils/format"
+import { blocksToText, countWords, formatDate, formatFileSize, textToBlocks, transcriptToText } from "@/utils/format"
 import NoteDocument from "./NoteDocument"
 import TranscriptDocument from "./TranscriptDocument"
 
@@ -14,12 +14,22 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
   const [tab, setTab] = useState<NoteType | "transcript" | "quiz">(lecture.note_types[0] ?? "detailed")
   const [copied, setCopied] = useState(false)
 
+  // Video and audio get a timestamped transcript. Documents and pasted text show the text the notes came from.
+  const sourceOption = lecture.transcript ? TRANSCRIPT_OPTION : SOURCE_TEXT_OPTION
+  const hasSource = Boolean(lecture.transcript || lecture.source_text)
   const showTranscript = tab === "transcript"
   const showQuiz = tab === "quiz"
-  const option = showQuiz ? QUIZ_OPTION : showTranscript ? TRANSCRIPT_OPTION : getNoteOption(tab)
+  const option = showQuiz ? QUIZ_OPTION : showTranscript ? sourceOption : getNoteOption(tab)
   const blocks = showQuiz || showTranscript ? null : lecture.notes[tab]
-  const plainText = showTranscript ? transcriptToText(lecture.transcript ?? []) : blocks ? blocksToText(blocks) : ""
+  const plainText = showTranscript
+    ? lecture.transcript
+      ? transcriptToText(lecture.transcript)
+      : (lecture.source_text ?? "")
+    : blocks
+      ? blocksToText(blocks)
+      : ""
   const words = countWords(plainText)
+  const quizText = lecture.source_text ?? lecture.transcript?.map((segment) => segment.text).join(" ")
 
   async function copyNotes() {
     await navigator.clipboard.writeText(plainText)
@@ -51,16 +61,16 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
               <Icon name="chevron" size={15} />
             </button>
           ))}
-          {lecture.transcript && (
+          {hasSource && (
             <button className={showTranscript ? "active" : ""} onClick={() => setTab("transcript")}>
               <div>
-                <Icon name={TRANSCRIPT_OPTION.icon} size={18} />
-                <span>{TRANSCRIPT_OPTION.title}</span>
+                <Icon name={sourceOption.icon} size={18} />
+                <span>{sourceOption.title}</span>
               </div>
               <Icon name="chevron" size={15} />
             </button>
           )}
-          {lecture.transcript ? (
+          {quizText ? (
             <button className={showQuiz ? "active" : ""} onClick={() => setTab("quiz")}>
               <div>
                 <Icon name={QUIZ_OPTION.icon} size={18} />
@@ -94,9 +104,9 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
         </aside>
         <section className="document-view">
           {/* Stays mounted on other tabs, so the teacher's questions aren't lost when they check the notes. */}
-          {lecture.transcript && (
+          {quizText && (
             <div hidden={!showQuiz}>
-              <QuizBuilder title={lecture.title} segments={lecture.transcript} />
+              <QuizBuilder title={lecture.title} text={quizText} />
             </div>
           )}
           {showQuiz ? null : plainText ? (
@@ -110,8 +120,10 @@ export default function ResultsView({ lecture }: { lecture: Lecture }) {
               </div>
               {blocks ? (
                 <NoteDocument kicker={option.title.toUpperCase()} title={lecture.title} blocks={blocks} />
+              ) : lecture.transcript ? (
+                <TranscriptDocument title={lecture.title} segments={lecture.transcript} />
               ) : (
-                <TranscriptDocument title={lecture.title} segments={lecture.transcript ?? []} />
+                <NoteDocument kicker={option.title.toUpperCase()} title={lecture.title} blocks={textToBlocks(plainText)} />
               )}
             </>
           ) : (

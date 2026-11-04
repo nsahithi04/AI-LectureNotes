@@ -5,7 +5,7 @@ import Icon, { type IconName } from "@/components/ui/Icon"
 import Logo from "@/components/ui/Logo"
 
 const STEPS: [string, string, string, IconName][] = [
-  ["01", "Add your lecture", "Upload a video, audio recording or PDF, or paste the lecture text.", "upload"],
+  ["01", "Add your lecture", "Upload a video, audio recording, slides or handouts, or paste the lecture text.", "upload"],
   ["02", "Choose your notes", "Pick a detailed transcript, short revision notes, important points, or all three.", "note"],
   ["03", "Study and test yourself", "Read your notes, then turn them into a practice test to check what you've learned.", "question"],
 ]
@@ -47,7 +47,7 @@ export default function LandingPage() {
               <em>structured notes.</em>
             </h1>
             <p>
-              Upload a lecture video, audio recording, PDF or text. Get a detailed transcript, short revision notes and
+              Upload a lecture video, audio recording, slides, handouts or text. Get a detailed transcript, short revision notes and
               the important points, then test yourself.
             </p>
             <div className="hero-actions">
@@ -138,7 +138,7 @@ export default function LandingPage() {
             </span>
             <span>
               <Icon name="pdf" />
-              Slides & handouts <small>PDF</small>
+              Slides & handouts <small>PDF, Word, PowerPoint</small>
             </span>
             <span>
               <Icon name="text" />

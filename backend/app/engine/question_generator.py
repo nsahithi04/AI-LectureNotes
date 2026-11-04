@@ -14,7 +14,7 @@ QuestionChoice = Literal["multiple_choice", "short_answer", "both"]
 
 MCQ_OPTIONS = 4
 
-SYSTEM_INSTRUCTION = f"""You write quiz questions that a teacher can give to their students, based on a lecture transcript.
+SYSTEM_INSTRUCTION = f"""You write quiz questions that a teacher can give to their students, based on lecture material: a transcript, slides or pasted text, called the transcript below.
 
 - Test understanding of what the lecture taught, not trivia about how it was delivered.
 - Cover the whole lecture, unless the teacher asks you to focus on something.

@@ -6,3 +6,6 @@ python-dotenv==1.2.4
 av==16.1.0
 faster-whisper==1.2.1
 google-genai==2.34.0
+pypdf==6.20.1
+# Calls the meeting providers' APIs (Google Meet, Microsoft Graph)
+httpx==0.28.1

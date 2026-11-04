@@ -1,14 +1,15 @@
 # LectureAI
 
-Upload a lecture video and get structured notes and a timestamped transcript.
+Upload a lecture and get structured notes, then turn them into a quiz for students.
 
-The MVP covers video only: **video → FFmpeg audio → faster-whisper transcript → Gemini notes → results screen**. There's no database or login yet, so notes aren't saved.
+| Input | Formats | Limit | How the text is found |
+| ----- | ------- | ----- | --------------------- |
+| Video | MP4, MOV, MKV | 15 minutes | FFmpeg extracts the audio, then faster-whisper transcribes it |
+| Audio | MP3, WAV, M4A | 30 minutes | faster-whisper transcribes it |
+| Document | PDF, Word (.docx), PowerPoint (.pptx) | 300 pages or slides | The text is read from the file, including tables and PowerPoint speaker notes. Scanned PDFs and old .doc and .ppt files aren't supported. |
+| Text | Pasted text | 30 to 100,000 characters | Used as it is |
 
-| Limit | Value |
-| ----- | ----- |
-| Formats | MP4, MOV, MKV |
-| Length | 15 minutes |
-| File size | 500 MB |
+Every file can be up to 500 MB. Gemini then writes the notes. There's no database or login yet, so notes aren't saved.
 
 ## Prerequisites
 
@@ -74,7 +75,7 @@ npm run dev
 ## Uploading a lecture
 
 1. Open http://localhost:5173/new. Use `localhost` here, because it's the address the backend allows.
-2. Drop in a video, or click **browse files**.
+2. Choose Video, Audio, Document or Text. Drop in a file or click **browse files**, or paste the text.
 3. Click **Generate Lecture Notes**.
 4. Keep the tab open until the notes appear. A 15-minute lecture takes around 5 minutes on an M1 Pro, and longer when Gemini is slow.
 
@@ -125,19 +126,46 @@ When a teacher signs in, Google shows "Google hasn't verified this app" until th
 ## How the pipeline works
 
 ```
-Browser ── POST /api/video/process ──► app/api/routes/video.py
-                                         app/services/pipeline_service.py
-                                           saves the upload to temp/<job id>/
-                                           app/engine/pipeline.py  video_to_notes()
-                                             1. video_reader.py      FFprobe checks the file
-                                             2. audio_extractor.py   FFmpeg writes 16 kHz mono WAV
-                                             3. transcriber.py       faster-whisper makes the transcript
-                                             4. notes_generator.py   Gemini writes structured notes
-                                           deletes temp/<job id>/, even after a failure
-Browser ◄── JSON: video, transcription, lecture_notes
+Browser ── POST /api/{video,audio,document,text}/process ──► app/api/routes/process.py
+             app/services/pipeline_service.py   saves an upload to temp/<job id>/
+             app/engine/pipeline.py
+               video:  media_reader.inspect_video → audio_extractor → transcriber → notes_generator
+               audio:  media_reader.inspect_audio → audio_extractor → transcriber → notes_generator
+               document: document_reader.read_document → notes_generator
+               text:   notes_generator
+             deletes temp/<job id>/, even after a failure
+Browser ◄── JSON: source, transcription (video and audio only), text, lecture_notes
 ```
 
+- **media_reader.py** checks the file with FFprobe, including its length.
+- **audio_extractor.py** uses FFmpeg to write 16 kHz mono WAV.
+- **transcriber.py** uses faster-whisper to make a timestamped transcript.
+- **document_reader.py** reads PDFs with pypdf, and Word and PowerPoint files with Python's own ZIP and XML tools. It rejects password-protected and scanned PDFs, and Word or PowerPoint files whose XML would expand to an unreasonable size.
+- **notes_generator.py** asks Gemini for structured notes.
+
 It's one long request, so there's no live progress. The upload is deleted as soon as the request ends.
+
+## Meeting integrations (in progress)
+
+LectureAI imports meeting transcripts from Google Meet and Microsoft Teams **after the meeting ends**, and turns them into notes. The shared layer is in `backend/app/meetings/`: each provider's data is converted into one `TranscriptSegment` format before it reaches the AI engine, so the engine never depends on a provider. Teachers without a plan that includes transcripts can record the class on their computer and upload the file instead.
+
+| Provider | Status | What the teacher needs |
+| -------- | ------ | ---------------------- |
+| Google Meet | **Built** (backend) | A Workspace plan with Meet transcripts (Education Plus, Teaching and Learning Upgrade, Business Standard or higher), and transcription turned on during the meeting. Google deletes transcript entries after 30 days. |
+| Microsoft Teams | Planned | A Microsoft 365 plan with Teams transcription, and a tenant admin allowing transcript access through Microsoft Graph. |
+| Zoom | Planned, later | A Pro or higher plan with cloud recording. Live transcripts through RTMS also need the Zoom Developer Pack. |
+
+### Setting up Google Meet
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), in the project you use for Google Forms, open **APIs & Services → Library** and enable the **Google Meet REST API**.
+2. Under **APIs & Services → OAuth consent screen → Data access**, add the scope `https://www.googleapis.com/auth/meetings.space.readonly`. While the app is in testing, add each teacher's Google account as a test user. Publishing to everyone needs Google's verification, because this scope is sensitive.
+3. Open your **Web application** OAuth client under **Credentials** (the one Google Forms uses works) and add this to **Authorized redirect URIs**:
+   `http://127.0.0.1:8000/api/meetings/google_meet/callback`
+4. Put the client ID and secret in `backend/.env` as `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`, then restart the backend. The secret stays on the server and must never go in `frontend/.env`.
+
+To try it before the frontend page exists, open `http://127.0.0.1:8000/api/meetings/google_meet/connect` in your browser and sign in. Afterwards, `GET /api/meetings/google_meet/meetings` lists your recent meetings. `POST /api/meetings/google_meet/meetings/{id}/import` imports one, and `POST /api/meetings/sessions/{session_id}/notes` makes notes from it.
+
+Sessions, transcripts and OAuth tokens are stored as files in `backend/storage/meetings/` for **development only**. Real use needs a database with encrypted tokens and LectureAI logins. Until then, every request acts as one development teacher (`DEV_USER_ID`).
 
 ## Project structure
 
@@ -152,6 +180,7 @@ lecture-ai/
 └── backend/
     ├── app/
     │   ├── engine/             Video to notes, with no web code and no users
+    │   ├── meetings/           Meeting providers, transcript intake and normalization
     │   ├── api/routes/         HTTP only
     │   ├── services/           Connects uploads to the engine
     │   ├── schemas/            API response shapes
@@ -166,25 +195,29 @@ The older `/api/lectures` routes, `LecturePage` and `NoteTypePicker` aren't used
 
 ## API
 
-`POST /api/video/process` takes a multipart form:
+Each input has its own endpoint, and they all return the same shape:
 
-| Field | Required | Meaning |
-| ----- | -------- | ------- |
-| `video` | Yes | The video file |
-| `title` | No | Title to use for the notes. Gemini writes one if it's missing. |
-| `language` | No | Language code such as `en` or `hi`. Whisper detects it if it's missing. |
+| Endpoint | Body |
+| -------- | ---- |
+| `POST /api/video/process` | Multipart form: `video` file, optional `title` and `language` |
+| `POST /api/audio/process` | Multipart form: `audio` file, optional `title` and `language` |
+| `POST /api/document/process` | Multipart form: `document` file (.pdf, .docx or .pptx), optional `title` |
+| `POST /api/text/process` | JSON: `{"text": "...", "title": "..."}`, with `title` optional |
+
+`title` sets the title of the notes, and Gemini writes one if it's missing. `language` is a code such as `en` or `hi`, and Whisper detects it if it's missing.
 
 ```json
 {
   "success": true,
   "message": "Lecture notes generated successfully",
   "data": {
-    "video": { "filename": "lecture.mp4", "duration": 84.0, "size": 334723 },
+    "source": { "type": "video", "format": "mp4", "filename": "lecture.mp4", "size": 334723, "duration": 84.0, "pages": null, "characters": 1290 },
     "transcription": {
       "language": "en",
       "text": "Welcome to today's lecture...",
       "segments": [{ "start": 0.0, "end": 2.4, "text": "Welcome to today's lecture." }]
     },
+    "text": "Welcome to today's lecture...",
     "lecture_notes": {
       "title": "...",
       "overview": "...",
@@ -285,5 +318,5 @@ Run this before merging changes to the pipeline. Each generated set of notes use
 1. Build our own test link, so each student can get a different set of questions. This was removed from Google Forms, which can't do it.
 2. Add a job queue, so a long video doesn't need one open request.
 3. Choose a database, then add login and roles.
-4. Add audio, PDF and text uploads.
+4. Read scanned PDFs with OCR, and old .doc and .ppt files.
 5. When the application is done, split it into frontend, API and engine repositories.

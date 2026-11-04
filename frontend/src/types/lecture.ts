@@ -1,6 +1,6 @@
 // Shapes of the data exchanged with the backend. Field names match the API's JSON (snake_case).
 
-export type InputType = "video" | "audio" | "text" | "pdf"
+export type InputType = "video" | "audio" | "document" | "text"
 
 export type NoteType = "detailed" | "short" | "important"
 
@@ -29,7 +29,10 @@ export interface Lecture {
   note_types: NoteType[]
   source: LectureSource
   notes: Record<NoteType, NoteBlock[] | null>
+  /** Timestamped transcript, for video and audio. */
   transcript?: TranscriptSegment[]
+  /** The text the notes were made from, for every source type. */
+  source_text?: string
   error: string | null
   created_at: string
 }
@@ -63,12 +66,25 @@ export interface GeneratedNotes {
   conclusion: string
 }
 
-/** The `data` part of the POST /api/video/process response. */
-export interface VideoProcessData {
-  video: { filename: string; duration: number; size: number }
-  transcription: { language: string; text: string; segments: TranscriptSegment[] }
+/** The `data` part of the responses from the /api/{video,audio,document,text}/process endpoints. */
+export interface ProcessData {
+  source: {
+    type: InputType
+    /** The file extension without the dot, such as "pptx". Null for pasted text. */
+    format: string | null
+    filename: string | null
+    size: number | null
+    duration: number | null
+    /** Pages of a PDF, or slides of a PowerPoint file. */
+    pages: number | null
+    characters: number
+  }
+  transcription: { language: string; text: string; segments: TranscriptSegment[] } | null
+  text: string
   lecture_notes: GeneratedNotes
 }
+
+export type ProcessInput = { inputType: "text"; text: string } | { inputType: Exclude<InputType, "text">; file: File }
 
 export interface NewLectureInput {
   inputType: InputType

@@ -28,5 +28,3 @@ backend/temp/*
 .DS_Store
 .vscode/
 .idea/
-# Meeting sessions, transcripts and OAuth tokens (development storage)
-backend/storage/meetings/

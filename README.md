@@ -145,28 +145,6 @@ Browser ◄── JSON: source, transcription (video and audio only), text, lect
 
 It's one long request, so there's no live progress. The upload is deleted as soon as the request ends.
 
-## Meeting integrations (in progress)
-
-LectureAI imports meeting transcripts from Google Meet and Microsoft Teams **after the meeting ends**, and turns them into notes. The shared layer is in `backend/app/meetings/`: each provider's data is converted into one `TranscriptSegment` format before it reaches the AI engine, so the engine never depends on a provider. Teachers without a plan that includes transcripts can record the class on their computer and upload the file instead.
-
-| Provider | Status | What the teacher needs |
-| -------- | ------ | ---------------------- |
-| Google Meet | **Built** (backend) | A Workspace plan with Meet transcripts (Education Plus, Teaching and Learning Upgrade, Business Standard or higher), and transcription turned on during the meeting. Google deletes transcript entries after 30 days. |
-| Microsoft Teams | Planned | A Microsoft 365 plan with Teams transcription, and a tenant admin allowing transcript access through Microsoft Graph. |
-| Zoom | Planned, later | A Pro or higher plan with cloud recording. Live transcripts through RTMS also need the Zoom Developer Pack. |
-
-### Setting up Google Meet
-
-1. In [Google Cloud Console](https://console.cloud.google.com/), in the project you use for Google Forms, open **APIs & Services → Library** and enable the **Google Meet REST API**.
-2. Under **APIs & Services → OAuth consent screen → Data access**, add the scope `https://www.googleapis.com/auth/meetings.space.readonly`. While the app is in testing, add each teacher's Google account as a test user. Publishing to everyone needs Google's verification, because this scope is sensitive.
-3. Open your **Web application** OAuth client under **Credentials** (the one Google Forms uses works) and add this to **Authorized redirect URIs**:
-   `http://127.0.0.1:8000/api/meetings/google_meet/callback`
-4. Put the client ID and secret in `backend/.env` as `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`, then restart the backend. The secret stays on the server and must never go in `frontend/.env`.
-
-To try it before the frontend page exists, open `http://127.0.0.1:8000/api/meetings/google_meet/connect` in your browser and sign in. Afterwards, `GET /api/meetings/google_meet/meetings` lists your recent meetings. `POST /api/meetings/google_meet/meetings/{id}/import` imports one, and `POST /api/meetings/sessions/{session_id}/notes` makes notes from it.
-
-Sessions, transcripts and OAuth tokens are stored as files in `backend/storage/meetings/` for **development only**. Real use needs a database with encrypted tokens and LectureAI logins. Until then, every request acts as one development teacher (`DEV_USER_ID`).
-
 ## Project structure
 
 ```
@@ -180,7 +158,6 @@ lecture-ai/
 └── backend/
     ├── app/
     │   ├── engine/             Video to notes, with no web code and no users
-    │   ├── meetings/           Meeting providers, transcript intake and normalization
     │   ├── api/routes/         HTTP only
     │   ├── services/           Connects uploads to the engine
     │   ├── schemas/            API response shapes

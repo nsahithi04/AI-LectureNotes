@@ -3,7 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, lectures, meetings, process, questions
+from app.api.routes import health, lectures, process, questions
 from app.core import config
 from app.core.errors import error_response, register_error_handlers
 
@@ -36,4 +36,3 @@ app.include_router(health.router)
 app.include_router(lectures.router)
 app.include_router(process.router)
 app.include_router(questions.router)
-app.include_router(meetings.router)

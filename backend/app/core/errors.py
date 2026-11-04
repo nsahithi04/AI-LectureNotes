@@ -11,7 +11,6 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.engine.errors import EngineError
-from app.meetings.errors import MeetingError
 
 logger = logging.getLogger(__name__)
 
@@ -51,26 +50,6 @@ ENGINE_ERROR_STATUS = {
 }
 
 
-# The HTTP status for each meetings error. Any code not listed here is sent as a 500.
-MEETING_ERROR_STATUS = {
-    "capability_not_supported": 400,
-    "invalid_connection": 400,
-    "reconnect_required": 401,
-    "missing_permission": 403,
-    "permission_denied": 403,
-    "provider_not_found": 404,
-    "session_not_found": 404,
-    "meeting_not_found": 404,
-    "not_connected": 409,
-    "transcript_not_ready": 409,
-    "no_transcript": 422,
-    "provider_rate_limited": 429,
-    "provider_not_available": 501,
-    "provider_error": 502,
-    "provider_not_configured": 503,
-}
-
-
 def error_response(status_code: int, code: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
@@ -86,10 +65,6 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(EngineError)
     async def handle_engine_error(_: Request, exc: EngineError) -> JSONResponse:
         return error_response(ENGINE_ERROR_STATUS.get(exc.code, 500), exc.code, exc.message)
-
-    @app.exception_handler(MeetingError)
-    async def handle_meeting_error(_: Request, exc: MeetingError) -> JSONResponse:
-        return error_response(MEETING_ERROR_STATUS.get(exc.code, 500), exc.code, exc.message)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
